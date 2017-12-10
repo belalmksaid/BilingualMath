@@ -1,0 +1,167 @@
+#pragma once
+
+#include "util.h"
+#include <iostream>
+#include <string.h>
+#include <lapacke.h>
+
+namespace math
+{
+
+template <int T>
+struct matrix
+{
+  public:
+    int tot = T * T;
+    prec data[T][T];
+
+    prec &operator()(int i, int j)
+    {
+        return data[i][j];
+    }
+
+    matrix<T> &operator=(const matrix<T> &);
+
+    matrix<T> &operator+=(const matrix<T> &M)
+    {
+        return *this = *this + M;
+    }
+
+    matrix<T> &operator*=(const matrix<T> &M)
+    {
+        return *this = *this * M;
+    }
+    matrix<T> &operator*=(prec m)
+    {
+        return *this = *this * m;
+    }
+
+    matrix<T> &transpose()
+    {
+        int n = T;
+        math::bl_transpose_(*data, &n, &n);
+        return (*this);
+    }
+
+    matrix<T> &inverse()
+    {
+        lapack_int n = T;
+        lapack_int ipiv[T];
+        lapack_int info = 0;
+        prec work[T * T];
+        lapack_int wc = T * T;
+        LAPACK_dgetrf(&n, &n, *data, &n, ipiv, &info);
+        LAPACK_dgetri(&n, *data, &n, ipiv, work, &wc, &info);
+        return *this;
+    }
+
+    void print()
+    {
+        for (int i = 0; i < T; i++)
+        {
+            for (int j = 0; j < T; j++)
+            {
+                std::cout << data[i][j] << "\t";
+            }
+            std::cout << "\n"
+                      << std::endl;
+        }
+    }
+
+    static matrix<T> random();
+    static matrix<T> identity();
+    static matrix<T> zero();
+    static matrix<T> transpose(matrix<T> m);
+    static matrix<T> inverse(matrix<T> m);
+};
+
+template <int T>
+matrix<T> &matrix<T>::operator=(const matrix<T> &cp)
+{
+    //cblas_dcopy(cp.tot, *(cp.data), 1, *data, 1);
+    memcpy(&data, &(cp.data), cp.tot * sizeof(prec));
+    // for(int i = 0; i < cp.tot; i++) {
+    //    *(*(data) + i) = *(*(cp.data) + i);
+    // }
+    return *this;
+}
+
+template <int T>
+matrix<T> operator+(const matrix<T> &a, const matrix<T> &b)
+{
+    matrix<T> temp;
+    for (int i = 0; i < a.tot; i++)
+    {
+        *(*(temp.data) + i) = *(*(a.data) + i) + *(*(b.data) + i);
+    }
+    return temp;
+}
+
+template <int T>
+matrix<T> operator*(const matrix<T> &a, const matrix<T> &m)
+{
+    matrix<T> temp;
+    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, T, T, T, 1.0, *(a.data), T, *(m.data), T, 0.0, *(temp.data), T);
+    return temp;
+}
+
+template <int T>
+matrix<T> operator*(const matrix<T> &a, prec m)
+{
+    matrix<T> temp = a;
+    cblas_dscal(temp.tot, m, *(temp.data), 1);
+    // matrix<T> temp;
+    // for(int i = 0; i < a.tot; i++) {
+    //    *(*(temp.data) + i) = m * (*(*(a.data) + i));
+    // }
+    return temp;
+}
+
+template <int T>
+matrix<T> operator*(prec m, const matrix<T> &a)
+{
+    return a * m;
+}
+
+template <int T>
+matrix<T> matrix<T>::random()
+{
+    matrix<T> temp;
+    for (int i = 0; i < temp.tot; i++)
+    {
+        *(*(temp.data) + i) = math::random();
+    }
+    return temp;
+}
+
+template <int T>
+matrix<T> matrix<T>::identity()
+{
+    matrix<T> temp;
+    memset(&(temp.data), 0, sizeof(temp.data));
+    for (int i = 0; i < T; i++)
+    {
+        temp.data[i][i] = 1.0;
+    }
+    return temp;
+}
+
+template <int T>
+matrix<T> matrix<T>::zero()
+{
+    matrix<T> temp;
+    memset(&(temp.data), 0, sizeof(temp.data));
+    // for (int i = 0; i < temp.tot; i++)
+    // {
+    //     *(*(temp.data) + i) = 0.0;
+    // }
+    return temp;
+}
+
+template <int T>
+matrix<T> matrix<T>::transpose(matrix<T> m)
+{
+    matrix<T> temp = m;
+    return temp.transpose();
+}
+};

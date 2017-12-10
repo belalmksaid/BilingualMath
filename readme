@@ -1,0 +1,7 @@
+## Bilingual Math Library ##
+
+
+To install blas:
+    -sudo apt-get install libopenblas-dev 
+To intall lapack:
+    -sudo apt-get install liblapacke-dev
