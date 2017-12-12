@@ -14,7 +14,7 @@ template <int T, int U>
 struct matrix
 {
   public:
-    int tot = T * U;
+    int tot = T * U, m = T, n = U;
     prec data[T][U];
 
     prec &operator()(int i, int j)
@@ -53,7 +53,8 @@ struct matrix
 
     matrix<T, U> &inverse()
     {
-        assert(T == U);
+        if (T != U)
+            return *this;
         lapack_int n = T;
         lapack_int ipiv[T];
         lapack_int info = 0;
@@ -150,10 +151,15 @@ template <int T, int U>
 matrix<T, U> matrix<T, U>::random()
 {
     matrix<T, U> temp;
-    for (int i = 0; i < temp.tot; i++)
-    {
-        *(*(temp.data) + i) = math::random();
-    }
+#ifdef DOUBLE_PREC
+    bl_drandom_((*temp.data), &(temp.m), &(temp.n));
+#else
+    bl_srandom_((*temp.data), &m, &n);
+#endif
+    // for (int i = 0; i < temp.tot; i++)
+    // {
+    //     *(*(temp.data) + i) = math::random();
+    // }
     return temp;
 }
 
